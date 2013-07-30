@@ -3,3 +3,6 @@
 AUTOMAKE_OPTIONS = foreign 1.4
 
 SUBDIRS = src doc test
+
+# Tell aclocal to include the libtool macros directory:
+ACLOCAL_AMFLAGS = -I m4
