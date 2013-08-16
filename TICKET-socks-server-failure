@@ -1,0 +1,93 @@
+It seems that if the user's torrc has ```SafeSocks 1```, then the rewrite of
+torsocks will fail because it first resolves the hostname for the requested
+service, and then attempts a SOCKS5 connection to that resolved IP
+address. With SafeSocks enabled, and with IsolateClientProtocols, the streams
+are viewed as separate by Tor; therefore, Tor does not allow the second
+connection to socks5://<resolved_ip>, because it appears that the resolve was
+done outside of Tor.
+
+The following is the output from torsocks with ```SafeSocks 1```:
+
+```
+∃!isisⒶwintermute:(rewrite *=)~/code/torproject/torsocks ∴ LD_PRELOAD=/lib/torsocks/libtorsocks.so wget whatthefuckismyip.com
+[Aug 16 14:13:16] DEBUG torsocks[23944]: Logging subsytem initialized. Level 5, file (null), time 1 (in init_logging() at torsocks.c:171)
+[Aug 16 14:13:16] DEBUG torsocks[23944]: Config file not provided by TORSOCKS_CONF_FILE. Using default /etc/torsocks.conf (in config_file_read() at config-file.c:267)
+[Aug 16 14:13:16] DEBUG torsocks[23944]: Config file setting tor address to 127.0.0.1 (in set_tor_address() at config-file.c:156)
+[Aug 16 14:13:16] DEBUG torsocks[23944]: Config file setting tor port to 59050 (in set_tor_port() at config-file.c:123)
+[Aug 16 14:13:16] DEBUG torsocks[23944]: [config] Onion address range set to 127.42.42.0/24 (in set_onion_info() at config-file.c:89)
+[Aug 16 14:13:16] DEBUG torsocks[23944]: Config file /etc/torsocks.conf opened and parsed. (in config_file_read() at config-file.c:294)
+[Aug 16 14:13:16] DEBUG torsocks[23944]: [onion] Pool init with subnet 127.42.42.0 and mask 24 (in onion_pool_init() at onion.c:103)
+[Aug 16 14:13:16] DEBUG torsocks[23944]: [onion] Pool initialized with base 0, max_pos 255 and size 8 (in onion_pool_init() at onion.c:131)
+--2013-08-16 14:13:16--  http://whatthefuckismyip.com/
+Resolving whatthefuckismyip.com (whatthefuckismyip.com)... [Aug 16 14:13:16] DEBUG torsocks[23944]: [getaddrinfo] Requesting whatthefuckismyip.com hostname (in tsocks_getaddrinfo() at getaddrinfo.c:40)
+[Aug 16 14:13:16] DEBUG torsocks[23944]: Resolving whatthefuckismyip.com on the Tor network (in tsocks_tor_resolve() at torsocks.c:345)
+[Aug 16 14:13:16] DEBUG torsocks[23944]: Setting up a connection to the Tor network on fd 3 (in setup_tor_connection() at torsocks.c:237)
+[Aug 16 14:13:16] DEBUG torsocks[23944]: Socks5 sending method ver: 5, nmethods 0x01, methods 0x00 (in socks5_send_method() at socks5.c:174)
+[Aug 16 14:13:16] DEBUG torsocks[23944]: Socks5 received method ver: 5, method 0x00 (in socks5_recv_method() at socks5.c:206)
+[Aug 16 14:13:16] DEBUG torsocks[23944]: [socks5] Resolve for whatthefuckismyip.com sent successfully (in socks5_send_resolve_request() at socks5.c:475)
+[Aug 16 14:13:17] DEBUG torsocks[23944]: [socks5] Resolve reply received successfully (in socks5_recv_resolve_reply() at socks5.c:551)
+[Aug 16 14:13:17] DEBUG torsocks[23944]: Close catched for fd 3 (in tsocks_close() at close.c:30)
+[Aug 16 14:13:17] DEBUG torsocks[23944]: [getaddrinfo] Node whatthefuckismyip.com resolved to 209.68.27.16 (in tsocks_getaddrinfo() at getaddrinfo.c:76)
+209.68.27.16
+Connecting to whatthefuckismyip.com (whatthefuckismyip.com)|209.68.27.16|:80... [Aug 16 14:13:17] DEBUG torsocks[23944]: [socket] Creating socket with domain 2, type 1 and protocol 0 (in tsocks_socket() at socket.c:30)
+[Aug 16 14:13:17] DEBUG torsocks[23944]: Connect catched on fd 3 (in tsocks_connect() at connect.c:39)
+[Aug 16 14:13:17] DEBUG torsocks[23944]: [connect] Socket family AF_INET and type 1 (in tsocks_connect() at connect.c:66)
+[Aug 16 14:13:17] DEBUG torsocks[23944]: [onion] Finding onion entry for IP 209.68.27.16 (in onion_entry_find_by_ip() at onion.c:253)
+[Aug 16 14:13:17] DEBUG torsocks[23944]: Connecting to the Tor network on fd 3 (in tsocks_connect_to_tor() at torsocks.c:311)
+[Aug 16 14:13:17] DEBUG torsocks[23944]: Setting up a connection to the Tor network on fd 3 (in setup_tor_connection() at torsocks.c:237)
+[Aug 16 14:13:17] DEBUG torsocks[23944]: Socks5 sending method ver: 5, nmethods 0x01, methods 0x00 (in socks5_send_method() at socks5.c:174)
+[Aug 16 14:13:17] DEBUG torsocks[23944]: Socks5 received method ver: 5, method 0x00 (in socks5_recv_method() at socks5.c:206)
+[Aug 16 14:13:17] DEBUG torsocks[23944]: Socks5 sending connect request to fd 3 (in socks5_send_connect_request() at socks5.c:312)
+[Aug 16 14:13:17] DEBUG torsocks[23944]: Socks5 received connect reply - ver: 5, rep: 0x01, atype: 0x01 (in socks5_recv_connect_reply() at socks5.c:371)
+[Aug 16 14:13:17] ERROR torsocks[23944]: General SOCKS server failure (in socks5_recv_connect_reply() at socks5.c:379)
+[Aug 16 14:13:17] DEBUG torsocks[23944]: Close catched for fd 3 (in tsocks_close() at close.c:30)
+failed: Connection refused.
+[Aug 16 14:13:17] DEBUG torsocks[23944]: [onion] Destroying onion pool containing 0 entry (in onion_pool_destroy() at onion.c:146)
+∃!isisⒶwintermute:(rewrite *=)~/code/torproject/torsocks ∴
+```
+
+And this is with ```SafeSocks 0``` in my torrc:
+
+```
+∃!isisⒶwintermute:(fix/002-switch-to-socks4a *=)~/code/torproject/torsocks ∴ LD_PRELOAD=/lib/torsocks/libtorsocks.so wget whatthefuckismyip.com
+[Aug 16 14:37:50] DEBUG torsocks[29556]: Logging subsytem initialized. Level 5, file (null), time 1 (in init_logging() at torsocks.c:171)
+[Aug 16 14:37:50] DEBUG torsocks[29556]: Config file not provided by TORSOCKS_CONF_FILE. Using default /etc/torsocks.conf (in config_file_read() at config-file.c:267)
+[Aug 16 14:37:50] DEBUG torsocks[29556]: Config file setting tor address to 127.0.0.1 (in set_tor_address() at config-file.c:156)
+[Aug 16 14:37:50] DEBUG torsocks[29556]: Config file setting tor port to 59050 (in set_tor_port() at config-file.c:123)
+[Aug 16 14:37:50] DEBUG torsocks[29556]: [config] Onion address range set to 127.42.42.0/24 (in set_onion_info() at config-file.c:89)
+[Aug 16 14:37:50] DEBUG torsocks[29556]: Config file /etc/torsocks.conf opened and parsed. (in config_file_read() at config-file.c:294)
+[Aug 16 14:37:50] DEBUG torsocks[29556]: [onion] Pool init with subnet 127.42.42.0 and mask 24 (in onion_pool_init() at onion.c:103)
+[Aug 16 14:37:50] DEBUG torsocks[29556]: [onion] Pool initialized with base 0, max_pos 255 and size 8 (in onion_pool_init() at onion.c:131)
+--2013-08-16 14:37:50--  http://whatthefuckismyip.com/
+Resolving whatthefuckismyip.com (whatthefuckismyip.com)... [Aug 16 14:37:50] DEBUG torsocks[29556]: [getaddrinfo] Requesting whatthefuckismyip.com hostname (in tsocks_getaddrinfo() at getaddrinfo.c:40)
+[Aug 16 14:37:50] DEBUG torsocks[29556]: Resolving whatthefuckismyip.com on the Tor network (in tsocks_tor_resolve() at torsocks.c:345)
+[Aug 16 14:37:50] DEBUG torsocks[29556]: Setting up a connection to the Tor network on fd 3 (in setup_tor_connection() at torsocks.c:237)
+[Aug 16 14:37:50] DEBUG torsocks[29556]: Socks5 sending method ver: 5, nmethods 0x01, methods 0x00 (in socks5_send_method() at socks5.c:174)
+[Aug 16 14:37:50] DEBUG torsocks[29556]: Socks5 received method ver: 5, method 0x00 (in socks5_recv_method() at socks5.c:206)
+[Aug 16 14:37:50] DEBUG torsocks[29556]: [socks5] Resolve for whatthefuckismyip.com sent successfully (in socks5_send_resolve_request() at socks5.c:475)
+[Aug 16 14:37:51] DEBUG torsocks[29556]: [socks5] Resolve reply received successfully (in socks5_recv_resolve_reply() at socks5.c:551)
+[Aug 16 14:37:51] DEBUG torsocks[29556]: Close catched for fd 3 (in tsocks_close() at close.c:30)
+[Aug 16 14:37:51] DEBUG torsocks[29556]: [getaddrinfo] Node whatthefuckismyip.com resolved to 209.68.27.16 (in tsocks_getaddrinfo() at getaddrinfo.c:76)
+209.68.27.16
+Connecting to whatthefuckismyip.com (whatthefuckismyip.com)|209.68.27.16|:80... [Aug 16 14:37:51] DEBUG torsocks[29556]: [socket] Creating socket with domain 2, type 1 and protocol 0 (in tsocks_socket() at socket.c:30)
+[Aug 16 14:37:51] DEBUG torsocks[29556]: Connect catched on fd 3 (in tsocks_connect() at connect.c:39)
+[Aug 16 14:37:51] DEBUG torsocks[29556]: [connect] Socket family AF_INET and type 1 (in tsocks_connect() at connect.c:66)
+[Aug 16 14:37:51] DEBUG torsocks[29556]: [onion] Finding onion entry for IP 209.68.27.16 (in onion_entry_find_by_ip() at onion.c:253)
+[Aug 16 14:37:51] DEBUG torsocks[29556]: Connecting to the Tor network on fd 3 (in tsocks_connect_to_tor() at torsocks.c:311)
+[Aug 16 14:37:51] DEBUG torsocks[29556]: Setting up a connection to the Tor network on fd 3 (in setup_tor_connection() at torsocks.c:237)
+[Aug 16 14:37:51] DEBUG torsocks[29556]: Socks5 sending method ver: 5, nmethods 0x01, methods 0x00 (in socks5_send_method() at socks5.c:174)
+[Aug 16 14:37:51] DEBUG torsocks[29556]: Socks5 received method ver: 5, method 0x00 (in socks5_recv_method() at socks5.c:206)
+[Aug 16 14:37:51] DEBUG torsocks[29556]: Socks5 sending connect request to fd 3 (in socks5_send_connect_request() at socks5.c:312)
+[Aug 16 14:37:51] DEBUG torsocks[29556]: Socks5 received connect reply - ver: 5, rep: 0x00, atype: 0x01 (in socks5_recv_connect_reply() at socks5.c:371)
+[Aug 16 14:37:51] DEBUG torsocks[29556]: Socks5 connection is successful. (in socks5_recv_connect_reply() at socks5.c:375)
+connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 5754 (5.6K) [text/html]
+Saving to: ‘index.html’
+
+100%[=====================================================================================================================>] 5,754       --.-K/s   in 0.1s
+
+2013-08-16 14:37:52 (45.5 KB/s) - ‘index.html’ saved [5754/5754]
+
+[Aug 16 14:37:52] DEBUG torsocks[29556]: [onion] Destroying onion pool containing 0 entry (in onion_pool_destroy() at onion.c:146)
+```
