@@ -45,6 +45,8 @@ struct config_file {
 
     /* The level to log at. */
     int log_level;
+    /* Boolean; whether or not to include timestamps in log statements. */
+    int log_timestamps;
 };
 
 /*
