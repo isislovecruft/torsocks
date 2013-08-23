@@ -38,6 +38,7 @@ static const char *conf_toraddr_str = "TorAddress";
 static const char *conf_torport_str = "TorPort";
 static const char *conf_onion_str = "OnionAddrRange";
 static const char *conf_loglevel_str = "LogLevel";
+static const char *conf_logtime_str = "LogTimestamps";
 
 /*
  * Set the onion pool address range in the configuration object using the value
@@ -198,6 +199,34 @@ end:
 error:
     return ret;
 }
+
+static int set_log_time(const char *ltime, struct configuration *config)
+{
+    int ret;
+    char *endptr;
+    int _ltime;
+
+    assert(ltime);
+    assert(config);
+
+    ret = 0;
+    _ltime = strtoul(ltime, &endptr, 10);
+    if (_ltime != 0 && _ltime != 1) {
+        ERR("[config] LogTimestamps must be 0 or 1.");
+        // XXX strtoul will set to 0 if unset, which *isn't* the default.
+        _ltime = strtoul(DEFAULT_LOG_TIME_STATUS, &endptr, 16);
+        ret = 1;
+    }
+    assert( (_ltime == 0) || (_ltime == 1) );
+
+    config->conf_file.log_timestamps = _ltime;
+    goto end;
+
+end:
+error:
+    return ret;
+}
+
 /*
  * Parse a single line of from a configuration file and set the value found in
  * the configuration object.
