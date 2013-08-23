@@ -27,7 +27,9 @@ LIBC_CLOSE_RET_TYPE tsocks_close(LIBC_CLOSE_SIG)
 {
 	struct connection *conn;
 
-	DBG("Close catched for fd %d", __fd);
+    /* This DEBUG log statement was super noisy, but I wanted the other DEBUG
+     * level logs, so I killed it. -- isis */
+	//DBG("Close catched for fd %d", __fd);
 
 	connection_registry_lock();
 	conn = connection_find(__fd);
