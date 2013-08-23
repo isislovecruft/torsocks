@@ -42,6 +42,9 @@ struct config_file {
 	 */
 	in_addr_t onion_base;
 	uint8_t onion_mask;
+
+    /* The level to log at. */
+    int log_level;
 };
 
 /*
