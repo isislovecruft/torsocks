@@ -19,6 +19,7 @@
 
 #include <arpa/inet.h>
 #include <assert.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -26,6 +27,7 @@
 #include <sys/socket.h>
 
 #include "config-file.h"
+#include "defaults.h"
 #include "log.h"
 #include "utils.h"
 
@@ -35,6 +37,7 @@
 static const char *conf_toraddr_str = "TorAddress";
 static const char *conf_torport_str = "TorPort";
 static const char *conf_onion_str = "OnionAddrRange";
+static const char *conf_loglevel_str = "LogLevel";
 
 /*
  * Set the onion pool address range in the configuration object using the value
@@ -160,6 +163,41 @@ error:
 	return ret;
 }
 
+static int set_log_level(const char *level, struct configuration *config)
+{
+    int ret;
+    char *endptr, *endptr2;
+    int _level;
+
+    assert(level);
+    assert(config);
+
+    _level = strtoimax(*level, &endptr, 10);
+    if (_level == 0) {
+        /* If the level is not set, set it to the default. */
+        WARN("[config] Log level not set.");
+        WARN("Using default level: %s", DEFAULT_LOG_LEVEL);
+        _level = strtoimax(DEFAULT_LOG_LEVEL, &endptr2, 16);
+    } else {
+        if (_level > 5) {
+            /* If the log level was set to higher than we allow, or if
+             * strtoimax returned INTMAX_MAX or UINTMAX_MAX, then set it to
+             * the highest we allow. */
+            ERR("[config] Log level %s not understood.", level);
+            WARN("[config] Setting log level to highest value: 5");
+            _level = 5;
+        }
+    }
+    assert( 5 >= _level >= 1);
+
+    config->conf_file.log_level = _level;
+    DBG("Config file setting log level to %d", _level);
+    ret = 0;
+
+end:
+error:
+    return ret;
+}
 /*
  * Parse a single line of from a configuration file and set the value found in
  * the configuration object.
