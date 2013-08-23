@@ -268,7 +268,7 @@ static int res_tests(char *ip, char *test) {
     printf("\n---------------------- %s res_query() TEST----------------------\n\n", test);
     snprintf((char *)host, 127, "www.google.com");
 #if !defined(OPENBSD) && !defined(__APPLE__) && !defined(__darwin__)
-    ret = res_nquery(&_res, (char *) host, C_IN, T_TXT, dnsreply, sizeof( dnsreply ));
+    ret = res_query(&_res, (char *) host, C_IN, T_TXT, dnsreply, sizeof( dnsreply ));
 #else
     ret = res_query((char *) host, C_IN, T_TXT, dnsreply, sizeof( dnsreply ));
 #endif
