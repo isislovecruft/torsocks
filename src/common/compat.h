@@ -41,6 +41,17 @@ void tsocks_mutex_destroy(tsocks_mutex_t *m);
 void tsocks_mutex_lock(tsocks_mutex_t *m);
 void tsocks_mutex_unlock(tsocks_mutex_t *m);
 
+typedef struct tsocks_once_t {
+	pthread_mutex_t mutex;
+	int once;
+} tsocks_once_t;
+
+/* Define a tsock once variable, statically initialized. */
+#define TSOCKS_INIT_ONCE(name) \
+	tsocks_once_t name = { .mutex = PTHREAD_MUTEX_INITIALIZER, .once = 1 }
+
+void tsocks_once(tsocks_once_t *o, void (*init_routine)(void));
+
 #else
 #error "OS not supported."
 #endif /* __GLIBC__, __darwin__, __FreeBSD__, __NetBSD__ */
