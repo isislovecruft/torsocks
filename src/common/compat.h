@@ -95,6 +95,18 @@ void tsocks_once(tsocks_once_t *o, void (*init_routine)(void));
 #ifndef __NR_recvmsg
 #define __NR_recvmsg -9
 #endif
+#ifndef __NR_gettid
+#define __NR_gettid -10
+#endif
+#ifndef __NR_getrandom
+#define __NR_getrandom -11
+#endif
+#ifndef __NR_futex
+#define __NR_futex -12
+#endif
+#ifndef __NR_accept4
+#define __NR_accept4 -13
+#endif
 
 #define TSOCKS_NR_SOCKET    __NR_socket
 #define TSOCKS_NR_CONNECT   __NR_connect
@@ -105,6 +117,54 @@ void tsocks_once(tsocks_once_t *o, void (*init_routine)(void));
 #define TSOCKS_NR_GETPEERNAME __NR_getpeername
 #define TSOCKS_NR_LISTEN    __NR_listen
 #define TSOCKS_NR_RECVMSG   __NR_recvmsg
+#define TSOCKS_NR_GETTID    __NR_gettid
+#define TSOCKS_NR_GETRANDOM __NR_getrandom
+#define TSOCKS_NR_FUTEX     __NR_futex
+#define TSOCKS_NR_ACCEPT4   __NR_accept4
+
+/*
+ * Despite glibc providing wrappers for these calls for a long time
+ * (as in "even Debian squeeze has all the wrappers"), libuv decided to
+ * use syscall() to invoke them instead.
+ */
+
+#include <sys/epoll.h>
+#include <sys/eventfd.h>
+#include <sys/inotify.h>
+
+#ifndef __NR_epoll_create1
+#define __NR_epoll_create1 -128
+#endif
+#ifndef __NR_epoll_wait
+#define __NR_epoll_wait -129
+#endif
+#ifndef __NR_epoll_pwait
+#define __NR_epoll_pwait -130
+#endif
+#ifndef __NR_epoll_ctl
+#define __NR_epoll_ctl -131
+#endif
+#ifndef __NR_eventfd2
+#define __NR_eventfd2 -132
+#endif
+#ifndef __NR_inotify_init1
+#define __NR_inotify_init1 -133
+#endif
+#ifndef __NR_inotify_add_watch
+#define __NR_inotify_add_watch -134
+#endif
+#ifndef __NR_inotify_rm_watch
+#define __NR_inotify_rm_watch -135
+#endif
+
+#define TSOCKS_NR_EPOLL_CREATE1 __NR_epoll_create1
+#define TSOCKS_NR_EPOLL_WAIT    __NR_epoll_wait
+#define TSOCKS_NR_EPOLL_PWAIT   __NR_epoll_pwait
+#define TSOCKS_NR_EPOLL_CTL     __NR_epoll_ctl
+#define TSOCKS_NR_EVENTFD2      __NR_eventfd2
+#define TSOCKS_NR_INOTIFY_INIT1 __NR_inotify_init1
+#define TSOCKS_NR_INOTIFY_ADD_WATCH __NR_inotify_add_watch
+#define TSOCKS_NR_INOTIFY_RM_WATCH  __NR_inotify_rm_watch
 
 #endif /* __linux__ */
 

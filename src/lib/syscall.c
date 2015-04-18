@@ -164,6 +164,196 @@ static LIBC_RECVMSG_RET_TYPE handle_recvmsg(va_list args)
 	return tsocks_recvmsg(sockfd, msg, flags);
 }
 
+#if defined(__linux__)
+/*
+ * Handle gettid(2) syscall.
+ */
+static LIBC_SYSCALL_RET_TYPE handle_gettid(void)
+{
+	return tsocks_libc_syscall(TSOCKS_NR_GETTID);
+}
+
+/*
+ * Handle getrandom(2) syscall.
+ */
+static LIBC_SYSCALL_RET_TYPE handle_getrandom(va_list args)
+{
+	void *buf;
+	size_t buflen;
+	unsigned int flags;
+
+	buf = va_arg(args, __typeof__(buf));
+	buflen = va_arg(args, __typeof__(buflen));
+	flags = va_arg(args, __typeof__(flags));
+
+	return tsocks_libc_syscall(TSOCKS_NR_GETRANDOM, buf, buflen, flags);
+}
+
+/*
+ * Handle futex(2) syscall.
+ */
+static LIBC_SYSCALL_RET_TYPE handle_futex(va_list args)
+{
+	/* This assumes Linux 2.6.7 or later, as that is when 'val3' was
+	 * added to futex(2).  Kernel versions prior to that are what I
+	 * would consider historic.
+	 */
+	const struct timespec *timeout;
+	int *uaddr, *uaddr2;
+	int op, val, val3;
+
+	uaddr = va_arg(args, __typeof__(uaddr));
+	op = va_arg(args, __typeof__(op));
+	val = va_arg(args, __typeof__(val));
+	timeout = va_arg(args, __typeof__(timeout));
+	uaddr2 = va_arg(args, __typeof__(uaddr2));
+	val3 = va_arg(args, __typeof__(val3));
+
+	return tsocks_libc_syscall(TSOCKS_NR_FUTEX, uaddr, op, val, timeout,
+			uaddr2, val3);
+}
+
+/*
+ * Handle accept4(2) syscall.
+ */
+static LIBC_SYSCALL_RET_TYPE handle_accept4(va_list args)
+{
+	int sockfd;
+	struct sockaddr *addr;
+	socklen_t addrlen;
+	int flags;
+
+	sockfd = va_arg(args, __typeof__(sockfd));
+	addr = va_arg(args, __typeof__(addr));
+	addrlen = va_arg(args, __typeof__(addrlen));
+	flags = va_arg(args, __typeof__(flags));
+
+	return tsocks_accept4(sockfd, addr, &addrlen, flags);
+}
+
+/*
+ * Handle epoll_create1(2) syscall.
+ */
+static LIBC_SYSCALL_RET_TYPE handle_epoll_create1(va_list args)
+{
+	int flags;
+
+	flags = va_arg(args, __typeof__(flags));
+
+	return epoll_create1(flags);
+}
+
+/*
+ * Handle epoll_wait(2) syscall.
+ */
+static LIBC_SYSCALL_RET_TYPE handle_epoll_wait(va_list args)
+{
+	int epfd;
+	struct epoll_event *events;
+	int maxevents;
+	int timeout;
+
+	epfd = va_arg(args, __typeof__(epfd));
+	events = va_arg(args, __typeof__(events));
+	maxevents = va_arg(args, __typeof__(maxevents));
+	timeout = va_arg(args, __typeof__(maxevents));
+
+	return epoll_wait(epfd, events, maxevents, timeout);
+}
+
+/*
+ * Handle epoll_pwait(2) syscall.
+ */
+static LIBC_SYSCALL_RET_TYPE handle_epoll_pwait(va_list args)
+{
+	int epfd;
+	struct epoll_event *events;
+	int maxevents;
+	int timeout;
+	const sigset_t *sigmask;
+
+	epfd = va_arg(args, __typeof__(epfd));
+	events = va_arg(args, __typeof__(events));
+	maxevents = va_arg(args, __typeof__(maxevents));
+	timeout = va_arg(args, __typeof__(maxevents));
+	sigmask = va_arg(args, __typeof__(sigmask));
+
+	return epoll_pwait(epfd, events, maxevents, timeout, sigmask);
+}
+
+/*
+ * Handle epoll_ctl(2) syscall.
+ */
+static LIBC_SYSCALL_RET_TYPE handle_epoll_ctl(va_list args)
+{
+	int epfd;
+	int op;
+	int fd;
+	struct epoll_event *event;
+
+	epfd = va_arg(args, __typeof__(epfd));
+	op = va_arg(args, __typeof__(op));
+	fd = va_arg(args, __typeof__(fd));
+	event = va_arg(args, __typeof__(event));
+
+	return epoll_ctl(epfd, op, fd, event);
+}
+
+/*
+ * Handle eventfd2(2) syscall.
+ */
+static LIBC_SYSCALL_RET_TYPE handle_eventfd2(va_list args)
+{
+	unsigned int initval;
+	int flags;
+
+	initval = va_arg(args, __typeof__(initval));
+	flags = va_arg(args, __typeof__(flags));
+
+	return eventfd(initval, flags);
+}
+
+/*
+ * Handle inotify_init1(2) syscall.
+ */
+static LIBC_SYSCALL_RET_TYPE handle_inotify_init1(va_list args)
+{
+	int flags;
+	flags = va_arg(args, __typeof__(flags));
+
+	return inotify_init1(flags);
+}
+
+/*
+ * Handle inotify_add_watch(2) syscall.
+ */
+static LIBC_SYSCALL_RET_TYPE handle_inotify_add_watch(va_list args)
+{
+	int fd;
+	const char *pathname;
+	uint32_t mask;
+
+	fd = va_arg(args, __typeof__(fd));
+	pathname = va_arg(args, __typeof__(pathname));
+	mask = va_arg(args, __typeof__(mask));
+
+	return inotify_add_watch(fd, pathname, mask);
+}
+
+/*
+ * Handle inotify_rm_watch(2) syscall.
+ */
+static LIBC_SYSCALL_RET_TYPE handle_inotify_rm_watch(va_list args)
+{
+	int fd, wd;
+
+	fd = va_arg(args, __typeof__(fd));
+	wd = va_arg(args, __typeof__(wd));
+
+	return inotify_rm_watch(fd, wd);
+}
+#endif /* __linux__ */
+
 /*
  * Torsocks call for syscall(2)
  */
@@ -228,6 +418,44 @@ LIBC_SYSCALL_RET_TYPE tsocks_syscall(long int number, va_list args)
 	case TSOCKS_NR_RECVMSG:
 		ret = handle_recvmsg(args);
 		break;
+#if defined(__linux__)
+	case TSOCKS_NR_GETTID:
+		ret = handle_gettid();
+		break;
+	case TSOCKS_NR_GETRANDOM:
+		ret = handle_getrandom(args);
+		break;
+	case TSOCKS_NR_FUTEX:
+		ret = handle_futex(args);
+		break;
+	case TSOCKS_NR_ACCEPT4:
+		ret = handle_accept4(args);
+		break;
+	case TSOCKS_NR_EPOLL_CREATE1:
+		ret = handle_epoll_create1(args);
+		break;
+	case TSOCKS_NR_EPOLL_WAIT:
+		ret = handle_epoll_wait(args);
+		break;
+	case TSOCKS_NR_EPOLL_PWAIT:
+		ret = handle_epoll_pwait(args);
+		break;
+	case TSOCKS_NR_EPOLL_CTL:
+		ret = handle_epoll_ctl(args);
+		break;
+	case TSOCKS_NR_EVENTFD2:
+		ret = handle_eventfd2(args);
+		break;
+	case TSOCKS_NR_INOTIFY_INIT1:
+		ret = handle_inotify_init1(args);
+		break;
+	case TSOCKS_NR_INOTIFY_ADD_WATCH:
+		ret = handle_inotify_add_watch(args);
+		break;
+	case TSOCKS_NR_INOTIFY_RM_WATCH:
+		ret = handle_inotify_rm_watch(args);
+		break;
+#endif /* __linux__ */
 	default:
 		/*
 		 * Because of the design of syscall(), we can't pass a va_list to it so
